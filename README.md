@@ -104,3 +104,17 @@ catch {
     Write-Warning $_.Exception.Message
 }
 ```
+
+- ### Offline install of vscode extensions
+
+This code was taken from [DscWorkshop/Lab/20 Lab Customizations.ps1](https://github.com/dsccommunity/DscWorkshop/blob/fdd283fa9a0cee53f1a749352969b387e752a0a5/Lab/20%20Lab%20Customizations.ps1#L166)
+```powershell
+Copy-LabFileItem -Path $labSources\SoftwarePackages\VSCodeExtensions -ComputerName $devOpsServer
+Invoke-LabCommand -ActivityName 'Install VSCode Extensions' -ComputerName $devOpsServer -ScriptBlock {
+    dir -Path C:\VSCodeExtensions | ForEach-Object {
+        code --install-extension $_.FullName 2>$null #suppressing errors
+    }
+} -NoDisplay
+```
+
+> Note: You can download any VSCode extension from the Visual Studio Marketplace like for example https://marketplace.visualstudio.com/items?itemName=ms-vscode.PowerShell.
