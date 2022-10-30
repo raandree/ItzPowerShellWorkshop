@@ -8,12 +8,63 @@
 - [ConvertTo-Expression: Serializes an object to a PowerShell expression](https://github.com/iRon7/ConvertTo-Expression)
 - [Join-Object: Combines two objects lists based on a related property between them](https://github.com/iRon7/Join-Object)
 - [ThreadJob: A PowerShell module for running concurrent jobs based on threads rather than processes](https://github.com/PowerShell/ThreadJob)
+- [AutomatedLab.Common](https://github.com/AutomatedLab/AutomatedLab.Common)
+- [PSPKI](https://github.com/PKISolutions/PSPKI)
 
 ## Recommended Resources
 
 - [PowerShell Explained](https://powershellexplained.com)
 - [From a one-liner to an advanced function and module](https://github.com/raandree/PowerShellTraining)
+- [PowerShell.one](https://powershell.one/)
 
+## Visual Studio Code
+
+**Keep in mind the ```F1``` shortcut which give you access to literally every command.**  
+
+### Extensions
+> Note: You can automatically install extensions into VSCode by calling ```code --install-extension <path>```
+- [PowerShell](https://marketplace.visualstudio.com/items?itemName=ms-vscode.PowerShell)
+- [GitLense](https://marketplace.visualstudio.com/items?itemName=eamodio.gitlens)
+- [Markdown All in One](https://marketplace.visualstudio.com/items?itemName=yzhang.markdown-all-in-one)
+- [Code Spell Checker](https://marketplace.visualstudio.com/items?itemName=streetsidesoftware.ode-spell-checker)
+- [YAML](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml)
+- [vscode-icons](https://marketplace.visualstudio.com/items?itemName=vscode-icons-team.vscode-icons)
+- [Bookmarks](https://marketplace.visualstudio.com/items?itemName=alefragnani.Bookmarks)
+- [GitHub Copilot](https://marketplace.visualstudio.com/items?itemName=GitHub.copilot)
+
+### Config
+- Each VSCode project can have it own settings when storing them in the file ```settings.json``` which must be n the ```.vscode``` folder. These settings may contain code style settings and settings for extensions.
+
+### Debugging
+
+- You can create yourself debug configs for each project. This is stored in the ```launch.json``` file in the ``.vscode``` folder.
+- Breakpoints can have added expressions or hit count, which makes debugging of loops much more comfortable.
+- The watch pane is most effective way to get an overview of you variables and their content.
+- Use the call stack that shows you the path to the current breakpoint in your code. You can easily navigate ack to the part of the code that called the code you are currently having the breakpoint in.
+- Remote debugging works in the ISE by opening a script with the command ```psEdit``` in the remote machine ithin a interactive session. If the workflow to start the script remotely is more complex, you can use the mdlet ```Wait-Debugger``` to halt the process and attache to it with ```Enter-PSHostProcess```. You need to now the process ID which is reflected by the variable ```$PID```.
+Git Integration
+A simple Git implementation is built into VSCode by default. The extension [GitLense](https://marketplace.isualstudio.com/items?itemName=eamodio.gitlens) additionally gives you a graphical file and commit history.
+
+> You can find more information about [debugging](https://code.visualstudio.com/Docs/editor/debugging).
+
+### Offline install of vscode extensions
+
+This code was taken from [DscWorkshop/Lab/20 Lab Customizations.ps1](https://github.com/dsccommunity/DscWorkshop/blob/fdd283fa9a0cee53f1a749352969b387e752a0a5/Lab/20%20Lab%20Customizations.ps1#L166)
+
+```powershell
+Copy-LabFileItem -Path $labSources\SoftwarePackages\VSCodeExtensions -ComputerName $devOpsServer
+Invoke-LabCommand -ActivityName 'Install VSCode Extensions' -ComputerName $devOpsServer -ScriptBlock {
+    dir -Path C:\VSCodeExtensions | ForEach-Object {
+        code --install-extension $_.FullName 2>$null #suppressing errors
+    }
+} -NoDisplay
+```
+
+&nbsp;
+
+> Note: You can download any VSCode extension from the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=ms-vscode.PowerShell) like for example.
+
+&nbsp;
 
 ## Code Samples
 
@@ -112,23 +163,6 @@
         Write-Warning $_.Exception.Message
     }
     ```
-
-- ### Offline install of vscode extensions
-
-    This code was taken from [DscWorkshop/Lab/20 Lab Customizations.ps1](https://github.com/dsccommunity/DscWorkshop/blob/fdd283fa9a0cee53f1a749352969b387e752a0a5/Lab/20%20Lab%20Customizations.ps1#L166)
-
-    ```powershell
-    Copy-LabFileItem -Path $labSources\SoftwarePackages\VSCodeExtensions -ComputerName $devOpsServer
-    Invoke-LabCommand -ActivityName 'Install VSCode Extensions' -ComputerName $devOpsServer -ScriptBlock {
-        dir -Path C:\VSCodeExtensions | ForEach-Object {
-            code --install-extension $_.FullName 2>$null #suppressing errors
-        }
-    } -NoDisplay
-    ```
-
-    &nbsp;
-
-    > Note: You can download any VSCode extension from the Visual Studio Marketplace like for example https://marketplace.visualstudio.com/items?itemName=ms-vscode.PowerShell.
 
     &nbsp;
 
@@ -269,4 +303,144 @@
 
     > Note: The files for this code are available in [ps1xml](Assets/ps1xml/).
 
-    
+    &nbsp;
+
+- ### AST (Abstract Syntax Tree)
+
+    The PowerShell AST essentially breaks down the code into a hierarchical tree with each element representing a part of the tree, making the scripts self aware.
+
+  - [How to Use the PowerShell AST to Get Meta with Your Scripts](https://adamtheautomator.com/powershell-ast/)
+  - [Advanced Tokenizing PowerShell Scripts](https://powershell.one/powershell-internals/parsing-and-tokenization/advanced-tokenizer)
+
+    &nbsp;
+
+    ```powershell
+    $tokens = Get-PSOneToken -Path D:\Untitled5.ps1 -ErrorAction Stop
+    $tokens[0].Tokens | Where-Object { ($_.TokenFlags -band 'Keyword') -eq 'Keyword' }
+
+    $tokens = $null
+    $parseErrors = $null
+    $ast = [System.Management.Automation.Language.Parser]::ParseFile('D:\Untitled5.ps1', [ref]$tokens, [ref]$parseErrors)
+    ```
+
+    &nbsp;
+
+- ### PowerShell Execution Policy
+
+    The PowerShell Execution Policy is not a security feature: [15 Ways to Bypass the PowerShell Execution Policy](https://www.netspi.com/blog/technical/network-penetration-testing/15-ways-to-bypass-the-powershell-execution-policy/). Method 12 most effective:
+
+    ```powershell
+    function Disable-ExecutionPolicy {(
+        $ctx = $executioncontext.gettype().getfield("_context","nonpublic,instance").getvalue( $executioncontext)).gettype().getfield("_authorizationManager","nonpublic,instance").setvalue($ctx, (new-object System.Management.Automation.AuthorizationManager "Microsoft.PowerShell"))
+        }
+        
+        Disable-ExecutionPolicy  .runme.ps1
+    }
+    ```
+
+    &nbsp;
+
+- ### REST API
+
+    We covered how to use the cmdlet `Invoke-RestMethod` by talking to the REST Api of Azure DevOps Server. The article [Create a Pipeline with the Azure DevOps API](https://blog.johnnyreilly.com/2021/05/08/create-pipeline-with-azure-devops-api/) and the API documentation was helpful to create the following code samples.
+
+
+    ```powershell
+    #List repositories
+    $org = 'AutomatedLab'
+    $project = 'DscConfig.Demo'
+    $pat = 'eifrqrgvxtwbf2ox5ouxapskm7ivko6rb7ugebz3djnit76tixvq'
+    $patBase64 = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(('{0}:{1}' -f 'PAT', $BasicAuthPAT)))
+    $headers = @{
+        AUTHORIZATION = 'basic {0}' -f $patBase64
+    }
+
+    $uri = 'https://dscdo01.contoso.com:8080/{0}/{1}/_apis/git/repositories?api-version=4.1' -f $org, $project
+
+    $response = Invoke-RestMethod -Uri $uri -Method Get -ContentType "application/json" -Headers $headers
+
+
+    #List pipelines
+    #https://learn.microsoft.com/en-us/rest/api/azure/devops/pipelines/pipelines/list?view=azure-devops-rest-6.0
+    $org = 'AutomatedLab'
+    $project = 'DscConfig.Demo'
+    $pat = 'eifrqrgvxtwbf2ox5ouxapskm7ivko6rb7ugebz3djnit76tixvq'
+    $patBase64 = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(('{0}:{1}' -f 'PAT', $BasicAuthPAT)))
+    $headers = @{
+        AUTHORIZATION = 'basic {0}' -f $patBase64
+    }
+
+    $uri = 'https://dscdo01.contoso.com:8080/{0}/{1}/_apis/pipelines?api-version=6.0-preview.1' -f $org, $project
+
+    $response = Invoke-RestMethod -Uri $uri -Method Get -ContentType "application/json" -Headers $headers
+
+    #Get pipeline
+    #https://learn.microsoft.com/en-us/rest/api/azure/devops/pipelines/pipelines/get?view=azure-devops-rest-6.0
+    $org = 'AutomatedLab'
+    $project = 'DscConfig.Demo'
+    $pat = 'eifrqrgvxtwbf2ox5ouxapskm7ivko6rb7ugebz3djnit76tixvq'
+    $patBase64 = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(('{0}:{1}' -f 'PAT', $BasicAuthPAT)))
+    $headers = @{
+        AUTHORIZATION = 'basic {0}' -f $patBase64
+    }
+
+    #note the pipeline ID as a parameter in the uri
+    $uri = 'https://dscdo01.contoso.com:8080/{0}/{1}/_apis/pipelines/1?api-version=6.0-preview.1' -f $org, $project
+
+    $response = Invoke-RestMethod -Uri $uri -Method Get -ContentType "application/json" -Headers $headers
+
+    # Create Pipeline
+    #https://learn.microsoft.com/en-us/rest/api/azure/devops/git/repositories/list?view=azure-devops-rest-4.1&tabs=HTTP
+    $org = 'AutomatedLab'
+    $project = 'DscConfig.Demo'
+    $pat = 'eifrqrgvxtwbf2ox5ouxapskm7ivko6rb7ugebz3djnit76tixvq'
+    $patBase64 = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(('{0}:{1}' -f 'PAT', $BasicAuthPAT)))
+    $headers = @{
+        AUTHORIZATION = 'basic {0}' -f $patBase64
+    }
+
+    $uri = 'https://dscdo01.contoso.com:8080/{0}/{1}/_apis/pipelines?api-version=6.0-preview.1' -f $org, $project
+
+    $body = @{
+        folder = ''
+        name = "pipeline-made-by-api"
+        configuration = @{
+            type = 'yaml'
+            path = '/azure-pipelines On-Prem.yml'
+            repository = @{
+                id = '379c50e4-ef90-4d00-8f81-a85535661b2a'
+                name = 'DscConfig.Demo'
+                type = 'azureReposGit'
+            }
+        } 
+    } | ConvertTo-Json
+
+    $response = Invoke-RestMethod -Uri $uri -Method Post -ContentType 'application/json; charset=utf-8' -Headers $headers -Body $body
+    ```
+
+- ### Slatting
+
+    Splatting is a method of passing a collection of parameter values to a command as a unit. PowerShell associates each value in the collection with a command parameter. Splatted parameter values are stored in named splatting variables, which look like standard variables, but begin with an At symbol (`@`) instead of a dollar sign (`$`). The At symbol tells PowerShell that you are passing a collection of values, instead of a single value. ([about_Splatting](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_splatting?view=powershell-7.2)])
+
+    ```powershell
+    $org = 'AutomatedLab'
+    $project = 'DscConfig.Demo'
+    $pat = 'eifrqrgvxtwbf2ox5ouxapskm7ivko6rb7ugebz3djnit76tixvq'
+    $patBase64 = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(('{0}:{1}' -f 'PAT', $BasicAuthPAT)))
+    $headers = @{
+        AUTHORIZATION = 'basic {0}' -f $patBase64
+    }
+
+    #note the pipeline ID as a parameter in the uri
+    $uri = 'https://dscdo01.contoso.com:8080/{0}/{1}/_apis/pipelines/1?api-version=6.0-preview.1' -f $org, $project
+
+
+    $param = @{
+        Uri = $uri
+        Method = 'Get'
+        ContentType = 'application/json'
+        Headers = $headers
+    }
+
+    $response = Invoke-RestMethod @param
+    ```
